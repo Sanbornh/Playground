@@ -9,45 +9,42 @@
 #  the deck has been dealt then the user is prompted for a new response.
 #  If a valid response is given, this response is returned.
 def query(cards_dealt, bank_roll)
-	print "What would you like to do? "
-	action = gets.chomp.upcase
+	while true 
+		print "What would you like to do? "
+		action = gets.chomp.upcase
 
-	if cards_dealt == false
-		if action == "D"
-			return "D"
-		elsif (action == "H") || (action == "S")
-			puts "The cards haven't been dealt.\n\n"
-			query(cards_dealt, bank_roll)
-		elsif action == "Q"
-			puts "Goodbye"
-		elsif action == "M"
-			puts "You have $#{bank_roll}.\n\n"
-			query(cards_dealt, bank_roll)
+		if cards_dealt == false
+			if action == "D"
+				return "D"
+			elsif (action == "H") || (action == "S")
+				puts "The cards haven't been dealt.\n\n"
+			elsif action == "Q"
+				puts "Goodbye"
+				return "G"
+			elsif action == "M"
+				puts "You have $#{bank_roll}.\n\n"
+			else
+				puts "\nI don't understand."
+				puts "You may: (D)eal, (H)it, (S)tand, display (M)oney, or (Q)uit."
+				puts "Therea are no other options. Deal with it.\n\n"
+			end
 		else
-			puts "I don't understand. You may:"
-			puts "(D)eal, (H)it, (S)tand, display (M)oney, or (Q)uit."
-			puts "Therea are no other options. Deal with it.\n\n"
-			query(cards_dealt, bank_roll)
-		end
-
-	else
-		if action == "D"
-			puts "The cards are already dealt.\n\n"
-			query(cards_dealt, bank_roll)
-		elsif (action == "H") 
-			return "H"
-		elsif (action == "S")
-			return "S"
-		elsif action == "Q"
-			puts "Goodbye"
-		elsif action == "M"
-			puts "You have $#{bank_roll}.\n\n"
-			query(cards_dealt, bank_roll)
-		else
-			puts "I don't understand. You may:"
-			puts "(D)eal, (H)it, (S)tand, display (M)oney, or (Q)uit."
-			puts "Therea are no other options. Deal with it.\n\n"
-			query(cards_dealt, bank_roll)
+			if action == "D"
+				puts "The cards are already dealt.\n\n"
+			elsif (action == "H") 
+				return "H"
+			elsif (action == "S")
+				return "S"
+			elsif action == "Q"
+				puts "Goodbye"
+				return "G"
+			elsif action == "M"
+				puts "You have $#{bank_roll}.\n\n"
+			else
+				puts "I don't understand. You may:"
+				puts "(D)eal, (H)it, (S)tand, display (M)oney, or (Q)uit."
+				puts "Therea are no other options. Deal with it.\n\n"
+			end
 		end
 	end
 end
@@ -84,8 +81,21 @@ def hit(deck_keys)
 	return new_card, deck_keys
 end
 
+def compare(player_total, dealers_actual_total)
+
+	if (player_total == 21) && (dealers_actual_total == 21)
+		return "push"
+	elsif (player_total > 21)
+		return "bust"
+	elsif (player_total > dealers_actual_total)
+		return "win"
+	else 
+		return "lose"
+	end
+end
+
 # Displays the players cards and Dealers cards with their associated values
-def display(players_hand, dealers_hand, players_hand_total, dealers_hand_visible_total)
+def display(players_hand, dealers_hand, player_total, dealer_visible_total)
 	lineWidth = 25
 
 	# Table Headings
@@ -110,8 +120,8 @@ def display(players_hand, dealers_hand, players_hand_total, dealers_hand_visible
 
 	# Value of Players hand and visible dealer card
 	print "Total:".ljust(10)
-	print " #{dealers_hand_visible_total}".ljust(lineWidth + 1)
-	puts "#{players_hand_total}".ljust(lineWidth + 1)
+	print " #{dealer_visible_total}".ljust(lineWidth + 1)
+	puts "#{player_total}".ljust(lineWidth + 1)
 end
 
 
@@ -192,20 +202,27 @@ if query(cards_dealt, bank_roll) == "D"
 	deck_keys = starting_hands[4]				# the deck is updated to reflect the missing cards
 
 	players_hand = starting_hands[0], starting_hands[1] 											# the players hand is stored into an array
-	players_hand_total = deck[players_hand[0]] + deck[players_hand[1]]				# the value of the players hand
+	player_total = deck[players_hand[0]] + deck[players_hand[1]]							# the value of the players hand
 
 	dealers_hand = starting_hands[2], starting_hands[3]												# ditto above but with dealers hand
-	dealers_hand_visible_total = deck[dealers_hand[0]]                    		# set the visible total of the dealers hand 
+	dealer_visible_total = deck[dealers_hand[0]]                    					# set the visible total of the dealers hand 
+	dealers_actual_total = deck[dealers_hand[0]] + deck[dealers_hand[1]]			# set the dealers actual hand value
 
-  display(players_hand, dealers_hand, players_hand_total, dealers_hand_visible_total)
+  display(players_hand, dealers_hand, player_total, dealer_visible_total)
 end
+compare(player_total, dealers_actual_total)
 
 while query(cards_dealt, bank_roll) == "H"
 	hit_returns = hit(deck_keys)
-	players_hand << hit_returns[0]
-	puts players_hand
-	deck_keys = hit_returns[1]					# the deck is updated to reflect that it is missing the last card drawn		
+	players_hand << hit_returns[0]								# players hand is updated to include the new card
+	player_total += deck[hit_returns[0]]					# the new card value is added to the value of the rest of the players hand
+	deck_keys = hit_returns[1]										# the deck is updated to reflect that it is missing the last card drawn		
+	display(players_hand, dealers_hand, player_total, dealer_visible_total)
+	puts compare(player_total, dealers_actual_total)
+
 end	
+
+
 
 
 
