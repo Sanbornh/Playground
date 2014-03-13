@@ -77,14 +77,14 @@ def deal(deck_keys)
 	return player_card_one, player_card_two, dealer_card_one, dealer_card_two, deck_keys
 end 
 
-#  Returns a new random card from the deck and the updated deck
+#  Returns a new random card from the deck as well as the updated deck
 def hit(deck_keys)
 	new_card = deck_keys[rand(deck_keys.length)]
 	deck_keys.delete(new_card)
 	return new_card, deck_keys
 end
 
-# Displays the players cards and Dealers cards
+# Displays the players cards and Dealers cards with their associated values
 def display(players_hand, dealers_hand, players_hand_total, dealers_hand_visible_total)
 	lineWidth = 25
 
@@ -104,14 +104,6 @@ def display(players_hand, dealers_hand, players_hand_total, dealers_hand_visible
 		puts " #{players_hand[i]} ".center(lineWidth)
 	end
 
-	# # First row of hands
-	# print "#{dealers_hand[0]}".center(lineWidth)
-	# puts " #{players_hand[0]} ".center(lineWidth)
-
-	# # Second row of hands
-	# print " xx ".center(lineWidth)
-	# puts " #{players_hand[1]} ".center(lineWidth)
-
 	# Divider
 	print "======".center(lineWidth)
 	puts "======".center(lineWidth)
@@ -123,7 +115,7 @@ def display(players_hand, dealers_hand, players_hand_total, dealers_hand_visible
 end
 
 
-# Sets the beginning state of the game
+# Set the beginning state of the game
 # No cards have been dealt and player starts with $100
 cards_dealt = false
 bank_roll = 100
@@ -199,17 +191,21 @@ if query(cards_dealt, bank_roll) == "D"
 	cards_dealt = true									# the deck has now been dealt
 	deck_keys = starting_hands[4]				# the deck is updated to reflect the missing cards
 
-	players_hand = starting_hands[0], starting_hands[1] # the players hand is stored into an array
+	players_hand = starting_hands[0], starting_hands[1] 											# the players hand is stored into an array
 	players_hand_total = deck[players_hand[0]] + deck[players_hand[1]]				# the value of the players hand
 
-	dealers_hand = starting_hands[2], starting_hands[3]	# ditto above but with dealers hand
-	dealers_hand_visible_total = deck[dealers_hand[0]]                    # set the visible total of the dealers hand 
+	dealers_hand = starting_hands[2], starting_hands[3]												# ditto above but with dealers hand
+	dealers_hand_visible_total = deck[dealers_hand[0]]                    		# set the visible total of the dealers hand 
 
   display(players_hand, dealers_hand, players_hand_total, dealers_hand_visible_total)
 end
 
-# while query(cards_dealt, bank_roll) == "H"
-# 	hit(deck_keys)
+while query(cards_dealt, bank_roll) == "H"
+	hit_returns = hit(deck_keys)
+	players_hand << hit_returns[0]
+	puts players_hand
+	deck_keys = hit_returns[1]					# the deck is updated to reflect that it is missing the last card drawn		
+end	
 
 
 
