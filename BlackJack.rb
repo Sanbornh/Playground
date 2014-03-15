@@ -3,100 +3,112 @@
 #
 #
 
+# ====================================================================
+# ============= Methods are all defined here =========================
+# ====================================================================
+
 #  Query handles all querying for the game.
 #  It asks for user input, then it checks if the user has requested
 #  to perform a valid move. Ex: if the user has asked to hit before
 #  the deck has been dealt then the user is prompted for a new response.
 #  If a valid response is given, this response is returned.
-def query(cards_dealt, bank_roll)
+def query(game_state, bank_roll)
 	while true 
-		print "What would you like to do? "
-		action = gets.chomp.upcase
+		print "What would you like to do? "								# Standard query
+		action = gets.chomp.upcase												# Store the users request
 
-		if cards_dealt == false
+		if action == "M" then puts "You have $#{bank_roll}.\n\n" end
+		if action == "Q" then puts "Goodbye", return action end
+
+		# At any time if user tries to input unacceptable order, display acceptable inputs
+		if ((action != "H") & (action != "S")) & ((action != "Q") & ((action != "M") & (action != "D")))	
+			puts "(D)eal, (H)it, (S)tand, display (M)oney, or (Q)uit."
+			puts "There are no other options. Deal with it.\n\n"
+		end
+
+		# The validity of other inputs is determined by the state of the game
+		if game_state == "cards_not_dealt"			
 			if action == "D"
-				return "D"
+				return action
 			elsif (action == "H") || (action == "S")
 				puts "The cards haven't been dealt.\n\n"
 			elsif action == "Q"
 				puts "Goodbye"
-				return "G"
-			elsif action == "M"
-				puts "You have $#{bank_roll}.\n\n"
-			else
-				puts "\nI don't understand."
-				puts "You may: (D)eal, (H)it, (S)tand, display (M)oney, or (Q)uit."
-				puts "Therea are no other options. Deal with it.\n\n"
+				return action
 			end
 		else
 			if action == "D"
 				puts "The cards are already dealt.\n\n"
-			elsif (action == "H") 
-				return "H"
-			elsif (action == "S")
-				return "S"
+			elsif action == ("H" || "S")
+				return action
 			elsif action == "Q"
-				puts "Goodbye"
-				return "G"
-			elsif action == "M"
-				puts "You have $#{bank_roll}.\n\n"
-			else
-				puts "I don't understand. You may:"
-				puts "(D)eal, (H)it, (S)tand, display (M)oney, or (Q)uit."
-				puts "Therea are no other options. Deal with it.\n\n"
+				puts "Quit"
+				return action
 			end
 		end
 	end
 end
 
-#  When asked to deal, cards are dealt to the player and the dealer
-#  A random card is first given to the player and then is removed from the deck array
-#  so that it is not available to be drawn from the deck anymore. 
-#  This process is repeated next for the dealer etc.. until player and dealer
-#  have two cards in front of them.
-#  The cards are returned as is the current state of the deck. 
-#  Ex: once dealt, four random cards will be returned and the deck minus those four cards will be
-#  returned. This new deck will later be passed to the hit function so that no cards can be drawn
-#  twice.
-def deal(deck_keys)	
-	player_card_one = deck_keys[rand(deck_keys.length)]
-	deck_keys.delete(player_card_one)
-
-	dealer_card_one = deck_keys[rand(deck_keys.length)]
-	deck_keys.delete(dealer_card_one)
-
-	player_card_two = deck_keys[rand(deck_keys.length)]
-	deck_keys.delete (player_card_two)
-
-	dealer_card_two = deck_keys[rand(deck_keys.length)]
-	deck_keys.delete(dealer_card_two)
-
-	return player_card_one, player_card_two, dealer_card_one, dealer_card_two, deck_keys
-end 
-
 #  Returns a new random card from the deck as well as the updated deck
-def hit(deck_keys)
+#  which not longer contains the card just dealt.
+def dealNewCard(deck_keys)
 	new_card = deck_keys[rand(deck_keys.length)]
 	deck_keys.delete(new_card)
 	return new_card, deck_keys
 end
 
-def compare(player_total, dealers_actual_total)
+#  Deals the starting hands. 
+#  Operates by twice dealing to the player and then the dealer.
+#  After each card is dealt, the deck is updated to reflect these 
+#  missing cards. And array of player cards, and array of dealer cards,
+#  and the updated deck are returned.
+def deal(deck_keys)	
+	player_cards, dealer_cards = Array.new(2) { [] }
 
-	if (player_total == 21) && (dealers_actual_total == 21)
-		return "push"
-	elsif (player_total > 21)
-		return "bust"
-	elsif (player_total > dealers_actual_total)
-		return "win"
-	else 
-		return "lose"
+	2.times do 
+		new_card = dealNewCard(deck_keys)
+		player_cards << new_card[0]
+		deck_keys = new_card[1]
+
+		new_card = dealNewCard(deck_keys)
+		dealer_cards << new_card[0]
+		deck_keys = new_card[1]
+	end
+
+	return player_cards, dealer_cards, deck_keys
+end 
+
+#  Evaluates the hands and returns a new game state 
+#  Ex: push, bust, win, lose
+def evaluate(game_state, player_hand, player_total, dealers_hand, dealers_actual_total)
+
+	if game_state == "cards_dealt"
+		if (player_total == 21) && (dealers_actual_total == 21)				# If dealer and player are both dealt Black Jack then push
+			return "push"
+		elsif (dealers_actual_total == 21) && (dealers_hand.length == 2) # If dealer is dealt Black Jack but player is not, then dealer wins
+			return "dealer blackJack"
+		elsif (player_total == 21) && (player_hand.length == 2)				# If player is dealt Black Jack but dealer is not, then player wins
+			return "player blackJack"
+		elsif (player_total > 21)
+			return "bust"
+		else 
+			return "nothing"
+		end
+	else
+		#evalute other things
 	end
 end
 
 # Displays the players cards and Dealers cards with their associated values
-def display(players_hand, dealers_hand, player_total, dealer_visible_total)
+def display(player_turn, players_hand, dealers_hand, player_total, dealer_visible_total)
 	lineWidth = 25
+
+	if players_hand.length > dealers_hand.length			# Take the hand that has more cards and store the number 
+		largest_hand = players_hand.length - 1 				# cards in that hand into a variable
+	else
+		largest_hand = dealers_hand.length - 1
+	end
+
 
 	# Table Headings
 	print "Dealer".center(lineWidth)
@@ -104,14 +116,31 @@ def display(players_hand, dealers_hand, player_total, dealer_visible_total)
 	print "======".center(lineWidth)
 	puts "======".center(lineWidth)
 
-
-	for i in 0..players_hand.length - 1 do
-		if i == 0
-			print "#{dealers_hand[i]}".center(lineWidth)
-		else
-			print " xx ".center(lineWidth)
+	if player_turn 
+		for i in 0..largest_hand do
+			if i == 0
+				print "#{dealers_hand[i]}".center(lineWidth)
+			elsif i == 1
+				print " xx ".center(lineWidth)
+			else 
+				print "    ".center(lineWidth)
+			end
+			puts " #{players_hand[i]} ".center(lineWidth)
 		end
-		puts " #{players_hand[i]} ".center(lineWidth)
+	else
+		for i in 0..largest_hand do
+			if (dealer_hand.length - 1) <= i
+				print "#{dealers_hand[i]}".center(lineWidth)
+			else
+				print "    ".center(lineWidth)
+			end
+
+			if (players_hand.length - 1) <= i
+				puts " #{players_hand[i]} ".center(lineWidth)
+			else
+				puts "    ".center(lineWidth)
+			end
+		end 
 	end
 
 	# Divider
@@ -124,17 +153,39 @@ def display(players_hand, dealers_hand, player_total, dealer_visible_total)
 	puts "#{player_total}".ljust(lineWidth + 1)
 end
 
+def bust(bank_roll)
+	puts "You busted."
+	puts "You lose $10"
+	return bank_roll -= 10
+end
 
-# Set the beginning state of the game
-# No cards have been dealt and player starts with $100
-cards_dealt = false
-bank_roll = 100
+def push
+	puts "Push"
+end
+
+def blackJack(bank_roll, who_won)
+	if who_won == "dealer blackJack"
+		#display cards?
+		puts "Dealer has Black Jack"
+		puts "You lose $10."
+		return bank_rol -= 10
+	else
+		puts "BLACKJACK!"
+		puts "You win 1.5 times your bet: $15"
+		return bank_roll += 15
+	end
+end
+
+
 
 #  Deck is a hash storing all the values of a single deck
 #  It is used to get the values of the cards that are dealt
-#  At the beginning of the game the deck is full
+#  At the beginning of the game the deck is full.
+#  **NOTE: Aces have a starting value of 11 and are assumed to be 11
+#  unless player with ace busts, in which case the value of the ace is 
+#  switched to 1.
 deck = {
-	#"AH" => [1, 11],
+	"AH" => 11,
 	"2H" => 2,
 	"3H" => 3,
 	"4H" => 4,
@@ -147,7 +198,7 @@ deck = {
 	"JH" => 10,
 	"QH" => 10,
 	"KH" => 10,
-	# "AD" => [1, 11],
+	"AD" => 11,
 	"2D" => 2,
 	"3D" => 3,
 	"4D" => 4,
@@ -160,7 +211,7 @@ deck = {
 	"JD" => 10,
 	"QD" => 10,
 	"KD" => 10,
-	# "AC" => [1, 11],
+	"AC" => 11,
 	"2C" => 2,
 	"3C" => 3,
 	"4C" => 4,
@@ -173,7 +224,7 @@ deck = {
 	"JC" => 10,
 	"QC" => 10,
 	"KC" => 10,
-	# "AS" => [1, 11],
+	"AS" => 11,
 	"2S" => 2,
 	"3S" => 3,
 	"4S" => 4,
@@ -188,39 +239,88 @@ deck = {
 	"KS" => 10,
 }
 
-#  Builds an array of all the cards (without associated values)
-deck_keys = deck.keys 
+# Starting bank roll is set to $100
+bank_roll = 100
 
+# ======================================================
+# ========= Player interaction begins here =============
+# ======================================================
 
-# Player interaction begins here
 puts "Welcome to BlackJack 1.0"
 puts "You have $100. Bets are $10."
 
-if query(cards_dealt, bank_roll) == "D"
-	starting_hands = deal(deck_keys)		# pass the 4 cards and the new deck out of the deal method
-	cards_dealt = true									# the deck has now been dealt
-	deck_keys = starting_hands[4]				# the deck is updated to reflect the missing cards
+while true
+	#  Builds an array of keys from the deck without associated values
+	#  This deck is rebuilt each time the player chooses to deal new cards
+	#  so that dealing always happens from a full deck.
+	deck_keys = deck.keys 
 
-	players_hand = starting_hands[0], starting_hands[1] 											# the players hand is stored into an array
-	player_total = deck[players_hand[0]] + deck[players_hand[1]]							# the value of the players hand
+	# Set the beginning state of the game
+	possible_states = ["cards_not_dealt", "cards_dealt", "bust", "after_dealer_move"]
+	game_state = possible_states[0]
+	players_turn = true
 
-	dealers_hand = starting_hands[2], starting_hands[3]												# ditto above but with dealers hand
-	dealer_visible_total = deck[dealers_hand[0]]                    					# set the visible total of the dealers hand 
-	dealers_actual_total = deck[dealers_hand[0]] + deck[dealers_hand[1]]			# set the dealers actual hand value
 
-  display(players_hand, dealers_hand, player_total, dealer_visible_total)
+	if query(game_state, bank_roll) == "D"
+		starting_hands = deal(deck_keys)				# pass the 4 cards and the new deck out of the deal method
+		game_state = possible_states[1]					# the deck has now been dealt
+		deck_keys = starting_hands[2]						# the deck is updated to reflect the missing cards
+
+		players_hand = starting_hands[0]																					# the players hand is stored into an array
+		player_total = deck[players_hand[0]] + deck[players_hand[1]]							# the value of the players hand
+
+		dealers_hand = starting_hands[1]																					# ditto above but with dealers hand
+		dealer_visible_total = deck[dealers_hand[0]]                    					# set the visible total of the dealers hand 
+		dealers_actual_total = deck[dealers_hand[0]] + deck[dealers_hand[1]]			# set the dealers actual hand value
+
+	  display(players_turn, players_hand, dealers_hand, player_total, dealer_visible_total)
+	end
+
+	if evaluate(game_state, players_hand, player_total, dealers_hand, dealers_actual_total) == ("player blackJack" || "dealer blackJack")
+		blackJack = true
+		bank_roll = blackJack(bank_roll, evaluate(game_state, players_hand, player_total, dealers_hand, dealers_actual_total))[0]
+	end
+
+	while true && (blackJack != true)
+		query_response = query(game_state, bank_roll)		# Just get a response from the player. At this point, only Q, H, or S are possible return values
+
+		if query_response == "H"
+			hit_returns = dealNewCard(deck_keys)
+			players_hand << hit_returns[0]								# Players hand is updated to include the new card
+			player_total += deck[hit_returns[0]]					# The new card value is added to the value of the rest of the players hand
+			deck_keys = hit_returns[1]										# The deck is updated to reflect that it is missing the last card drawn		
+			
+			display(players_turn, players_hand, dealers_hand, player_total, dealer_visible_total)
+			result = evaluate(game_state, players_hand, player_total, dealers_hand, dealers_actual_total)
+
+			if result == "bust"														# If the player busts then change the bank roll and display bust message
+				bank_roll = bust(bank_roll)
+				break																				# Break will return game to its starting state at which point everything proceeds from beginning
+			elsif result == "push"												# If push right off the bat then return game to starting state
+				push
+				break
+			end
+		else																						# If the player chooses not to hit, that is, he either Quits or Stands, then move out of this loop
+			break
+		end
+	end	
+
+	players_turn = false
+
+	if query_response == "S"													# If the player chose to stand then the dealer moves
+		display(players_turn, players_hand, dealers_hand, player_total, dealer_visible_total)
+		while dealers_actual_total <= 16
+			hit_returns = dealNewCard(deck_keys)
+			dealers_hand << hit_returns[0]
+			dealers_actual_total += deck[hit_returns[0]]
+			deck_keys = hit_returns
+			display(players_turn, players_hand, dealers_hand, player_total, dealer_visible_total)
+		end
+
+		evaluate(game_state, players_hand, player_total, dealers_hand, dealers_actual_total)
+	end
+	#puts "I'm outside"
 end
-compare(player_total, dealers_actual_total)
-
-while query(cards_dealt, bank_roll) == "H"
-	hit_returns = hit(deck_keys)
-	players_hand << hit_returns[0]								# players hand is updated to include the new card
-	player_total += deck[hit_returns[0]]					# the new card value is added to the value of the rest of the players hand
-	deck_keys = hit_returns[1]										# the deck is updated to reflect that it is missing the last card drawn		
-	display(players_hand, dealers_hand, player_total, dealer_visible_total)
-	puts compare(player_total, dealers_actual_total)
-
-end	
 
 
 
