@@ -18,7 +18,10 @@ def query(game_state, bank_roll)
 		action = gets.chomp.upcase												# Store the users request
 
 		if action == "M" then puts "You have $#{bank_roll}.\n\n" end
-		if action == "Q" then puts "Goodbye", return action end
+		if action == "Q" 
+			puts "Goodbye" 
+			return action 
+		end
 
 		# At any time if user tries to input unacceptable order, display acceptable inputs
 		if ((action != "H") & (action != "S")) & ((action != "Q") & ((action != "M") & (action != "D")))	
